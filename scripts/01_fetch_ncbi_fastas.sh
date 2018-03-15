@@ -3,4 +3,4 @@ parallel wget ftp://ftp.ncbi.nih.gov/genomes/Equus_caballus/CHR_{}/eca_ref_EquCa
 parallel wget ftp://ftp.ncbi.nih.gov/genomes/Equus_caballus/CHR_{}/eca_ref_EquCab3.0_chr{}.fa.gz ::: MT UN X
 parallel wget ftp://ftp.ncbi.nih.gov/genomes/Equus_caballus/CHR_{}/eca_ref_EquCab3.0_chr{}.fa.gz ::: 10
 parallel wget ftp://ftp.ncbi.nih.gov/genomes/Equus_caballus/CHR_{}/eca_ref_EquCab3.0_chr{}.fa.gz ::: Un
-zcat $(ls -1 *.fa.gz | sort -V)  | gzip  > EquCab3.fa
+zcat $(ls -1 *.fa.gz | sort -V)  | gzip  > EquCab3.fa.gz
