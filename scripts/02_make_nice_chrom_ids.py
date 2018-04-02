@@ -37,7 +37,7 @@ if not os.path.exists('EquCab3_nice.fasta'):
 if not os.path.exists('EquCab3_nice.gff'):
     with RawFile('GCF_002863925.1_EquCab3.0_genomic.gff.gz') as IN, open('EquCab3_nice.gff','w') as OUT:
         for line in IN:
-            id,*fields = line.split()
+            id,*fields = line.split('\t')
             if id in ids:
                 id = ids[id]
             print(id,*fields,file=OUT,sep='\t')
