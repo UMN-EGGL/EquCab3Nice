@@ -40,5 +40,5 @@ if not os.path.exists('EquCab3_nice.gff'):
             id,*fields = line.split('\t')
             if id in ids:
                 id = ids[id]
-            print(id,*fields,file=OUT,sep='\t')
+            print(id,*fields,file=OUT,sep='\t',end='')
 
