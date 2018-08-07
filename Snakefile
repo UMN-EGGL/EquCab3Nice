@@ -3,6 +3,9 @@ import bz2
 import lzma
 import os 
 
+from snakemake.remote.FTP import RemoteProvider as FTPRemoteProvider
+FTP = FTPRemoteProvider()
+
 from snakemake.remote.S3 import RemoteProvider as S3RemoteProvider
 s3_key_id = os.environ.get('AWS_ACCESS_KEY')
 s3_access_key = os.environ.get('AWS_SECRET_KEY')
@@ -97,16 +100,20 @@ rule NICE_GFF:
                 print(id,*fields,file=OUT,sep='\t',end='')
 
 rule NCBI_FASTA:
+    input:
+        FTP.remote("ftp://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Equus_caballus/latest_assembly_versions/GCF_002863925.1_EquCab3.0/GCF_002863925.1_EquCab3.0_genomic.fna.gz")
     output:
         "data/EquCab3.ncbi.fna.gz"
     shell:
-        "wget -O {output} ftp://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Equus_caballus/latest_assembly_versions/GCF_002863925.1_EquCab3.0/GCF_002863925.1_EquCab3.0_genomic.fna.gz"
+        'cp {input} {output}'
 
 rule NCBI_GFF:
+    input:
+        FTP.remote("ftp://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Equus_caballus/latest_assembly_versions/GCF_002863925.1_EquCab3.0/GCF_002863925.1_EquCab3.0_genomic.gff.gz")
     output:    
         "data/EquCab3.ncbi.gff.gz"
     shell:
-        "wget -O {output} ftp://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Equus_caballus/latest_assembly_versions/GCF_002863925.1_EquCab3.0/GCF_002863925.1_EquCab3.0_genomic.gff.gz"
+        'cp {input} {output}'
 
 rule UPLOAD_GFF:
     input:
@@ -123,3 +130,21 @@ rule UPLOAD_FASTA:
         S3.remote('FASTAs/EquCab3.nice.fna')
     shell:
         'cp {input} {output}'
+
+
+rule STAR_INDEX:
+    input:
+        fasta='data/EquCab3.nice.fna',
+        gff='data/EquCab3.nice.gff'
+    output:
+
+    shell:
+        '''STAR \
+          --runThreadN 2 \
+          --runMode genomeGenerate \
+          --genomeDir /home/schae234/Codes/BuildNiceEquCab3Fasta/data/ \
+          --genomeFastaFiles /home/schae234/Codes/BuildNiceEquCab3Fasta/{input.fasta} \
+          --sjdbGTFfile /home/schae234/Codes/BuildNiceEquCab3Fasta/{input.gff} \
+          --sjdbGTFtagExonParentTranscript Parent \
+        '''
+
