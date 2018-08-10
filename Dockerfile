@@ -51,6 +51,9 @@ RUN pip install ftputil
 
 COPY . /root/EquCab3Nice 
 
+RUN cd /root/EquCab3Nice
+
+ENTRYPOINT ["snakemake", "-s", "/root/EquCab3Nice/Snakefile"]
 
 
 # -----------------------------
