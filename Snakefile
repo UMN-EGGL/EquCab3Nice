@@ -3,7 +3,6 @@ import bz2
 import lzma
 import os 
 
-GCF = 'GCF_002863925.1_EquCab3.0'
 
 '''
 The file hierarchy on S3 looks like:
@@ -11,21 +10,20 @@ The file hierarchy on S3 looks like:
     s3://HorseGeneAnnotation/
         private/
             sequence/
-                fastq/
-                bam/
+                RNASEQ/
+                    fastq/
+                    bam/
+                WGS/
+                    fastq/
+                    bam/
             variant/
                 vcf/
         public/
             refgen/
-                GCF_002863925.1/
-                    ncbi/
-                        xxx.ncbi.fna
-                        xxx.ncbi.gff
-                        xxx.ncbi.index
-                    nice/
-                        xxx.nice.fna
-                        xxx.nice.gff
-                        xxx.nice.index
+                GCF_002863925.1_EquCab3.0/
+                    GCF_002863925.1_EquCab3.0.nice.fna
+                    GCF_002863925.1_EquCab3.0.nice.nice.gff
+                    GCF_002863925.1_EquCab3.0.nice.index
                         
 '''
 
@@ -62,9 +60,9 @@ S3 = S3RemoteProvider(
 )
 
 id_map = {
-    'NC_009144.3':'chr1', 'NC_009145.3':'chr2', 'NC_009146.3':'chr3',
-    'NC_009147.3':'chr4', 'NC_009148.3':'chr5', 'NC_009149.3':'chr6',
-    'NC_009150.3':'chr7', 'NC_009151.3':'chr8', 'NC_009152.3':'chr9',
+    'NC_009144.3':'chr1',  'NC_009145.3':'chr2',  'NC_009146.3':'chr3',
+    'NC_009147.3':'chr4',  'NC_009148.3':'chr5',  'NC_009149.3':'chr6',
+    'NC_009150.3':'chr7',  'NC_009151.3':'chr8',  'NC_009152.3':'chr9',
     'NC_009153.3':'chr10', 'NC_009154.3':'chr11', 'NC_009155.3':'chr12',
     'NC_009156.3':'chr13', 'NC_009157.3':'chr14', 'NC_009158.3':'chr15',
     'NC_009159.3':'chr16', 'NC_009160.3':'chr17', 'NC_009161.3':'chr18',
@@ -72,13 +70,30 @@ id_map = {
     'NC_009165.3':'chr22', 'NC_009166.3':'chr23', 'NC_009167.3':'chr24',
     'NC_009168.3':'chr25', 'NC_009169.3':'chr26', 'NC_009170.3':'chr27',
     'NC_009171.3':'chr28', 'NC_009172.3':'chr29', 'NC_009173.3':'chr30',
-    'NC_009174.3':'chr31', 'NC_009175.3':'chrX', 'NC_001640.1':'chrMt'
+    'NC_009174.3':'chr31', 'NC_009175.3':'chrX',  'NC_001640.1':'chrMt'
 }
+
+
+GCF = 'GCF_002863925.1_EquCab3.0'
+
+rule all:
+    input:
+        S3.remote('HorseGeneAnnotation/public/refgen/GCF_002863925.1_EquCab3.0/STAR_INDICES/Genome'),
+        
+
+rule compress_fastq:
+    input:
+        S3.remote("RnaSeqData/Project_McCue_Project_022/{sample}.fastq")
+    output:
+        S3.remote('HorseGeneAnnotation/private/sequence/RNASEQ/fastq/{sample}.fastq.gz')
+    shell:
+        'gzip -c {input} > {output}'
+
 
 rule STAR_INDEX:
     input:
-        gff = expand(S3.remote("HorseGeneAnnotation/public/refgen/{GCF}/{GCF}_genomic.nice.gff.gz"),GCF=GCF),
-        fna = expand(S3.remote("HorseGeneAnnotation/public/refgen/{GCF}/{GCF}_genomic.nice.fna.gz"),GCF=GCF)
+        gff = S3.remote("HorseGeneAnnotation/public/refgen/{GCF}/{GCF}_genomic.nice.gff.gz"),
+        fna = S3.remote("HorseGeneAnnotation/public/refgen/{GCF}/{GCF}_genomic.nice.fna.gz")
     output:
         S3.remote('HorseGeneAnnotation/public/refgen/{GCF}/STAR_INDICES/Genome'),
         S3.remote('HorseGeneAnnotation/public/refgen/{GCF}/STAR_INDICES/SA'),
@@ -95,9 +110,10 @@ rule STAR_INDEX:
         S3.remote('HorseGeneAnnotation/public/refgen/{GCF}/STAR_INDICES/sjdbList.fromGTF.out.tab'),
         S3.remote('HorseGeneAnnotation/public/refgen/{GCF}/STAR_INDICES/sjdbList.out.tab'),
         S3.remote('HorseGeneAnnotation/public/refgen/{GCF}/STAR_INDICES/transcriptInfo.tab') 
+    threads: 30
     shell:
         '''STAR \
-          --runThreadN 40 \
+          --runThreadN {threads} \
           --runMode genomeGenerate \
           --genomeDir HorseGeneAnnotation/public/refgen/{GCF}/STAR_INDICES/ \
           --genomeFastaFiles {input.fna} \
@@ -109,7 +125,6 @@ rule NICE_FASTA:
     input:
         fna = FTP.remote('ftp://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Equus_caballus/all_assembly_versions/{GCF}/{GCF}_genomic.fna.gz')
     output:
-        # fna='data/EquCab3.nice.fna',
         fna = S3.remote("HorseGeneAnnotation/public/refgen/{GCF}/{GCF}_genomic.nice.fna.gz")
     run:
         with RawFile(input.fna) as IN, open(output.fna,'w') as OUT:                                                                                                        
@@ -134,5 +149,4 @@ rule NICE_GFF:
                 if id in id_map:
                     id = id_map[id]
                 print(id,*fields,file=OUT,sep='\t',end='')
-
 
