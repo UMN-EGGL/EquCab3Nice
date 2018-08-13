@@ -49,6 +49,9 @@ RUN pip install snakemake
 RUN pip install boto3
 RUN pip install ftputil
 
+# Install AdapterREmoval
+RUN conda install -c maxibor adapterremoval2
+
 COPY . /root/EquCab3Nice 
 
 RUN cd /root/EquCab3Nice
