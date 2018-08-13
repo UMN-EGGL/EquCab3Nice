@@ -140,7 +140,6 @@ rule compress_fastq:
     output:
         S3.remote('HorseGeneAnnotation/private/sequence/RNASEQ/fastq/{sample}.fastq.gz')
     run:
-        import ipdb; ipdb.set_trace()
         shell('gzip -c {input} > {output}')
         
 
