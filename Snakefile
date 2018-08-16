@@ -78,8 +78,7 @@ id_map = {
 GCF = 'GCF_002863925.1_EquCab3.0'
 
 
-projects,samples, = S3.glob_wildcards("RnaSeqData/{project}/{sample}.fastq")
-sample_dict = {s:p for p,s in zip(projects,samples)}
+samples, = S3.glob_wildcards("RnaSeqData/120622_SN261_0440_AD10CBACXX/Project_McCue_Project_002/{sample}.fastq")
 
 
 rule all:
@@ -88,7 +87,7 @@ rule all:
 
 rule compress_fastq:
     input:
-        [S3.remote(f"RnaSeqData/{x}/{y}.fastq") for x,y in zip(projects,samples)]
+        S3.remote('RnaSeqData/120622_SN261_0440_AD10CBACXX/Project_McCue_Project_002/{sample}.fastq')
     output:
         S3.remote('HorseGeneAnnotation/private/sequence/RNASEQ/fastq/{sample}.fastq.gz')
     run:
