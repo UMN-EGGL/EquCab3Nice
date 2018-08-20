@@ -1,8 +1,8 @@
 import gzip
 import bz2
 import lzma
-import os 
 
+configfile: "config.yaml"
 
 
 '''
@@ -44,9 +44,7 @@ class RawFile(object):
     def __exit__(self,dtype,value,traceback):
         self.handle.close()
 
-
-
-
+import os 
 from snakemake.remote.FTP import RemoteProvider as FTPRemoteProvider
 FTP = FTPRemoteProvider()
 
@@ -77,21 +75,41 @@ id_map = {
 
 GCF = 'GCF_002863925.1_EquCab3.0'
 
+class fastq_finder():
+    def __init__(self,s3):
+    	self.s3 = s3
+    	self.files = []
+    	self.index = {}
+    def build_index(self,bucket):
+    	files = [bucket+'/'+x for x in self.s3._s3c.list_keys(bucket)]
+        for f in files:
+    		sample = os.path.basename(f).replace('.fastq','')
+    		self.index[sample] = f
+    		self.files.append(f)
+    def find_fastq(self,wc):
+    	return self.s3.remote(self.index[wc.sample])
+    	
+fastqs = fastq_finder(S3)
+fastqs.build_index('RnaSeqData')
 
-samples, = S3.glob_wildcards("RnaSeqData/120622_SN261_0440_AD10CBACXX/Project_McCue_Project_002/{sample}.fastq")
-
+targets = [
+    "HorseGeneAnnotation/private/sequence/RNASEQ/fastq/" + os.path.basename(x) + ".gz" for x in fastqs.files
+]
 
 rule all:
     input:
-        S3.remote(expand('HorseGeneAnnotation/private/sequence/RNASEQ/fastq/{sample}.fastq.gz',sample=samples))
+        S3.remote(expand('{target}',target=targets))
+
 
 rule compress_fastq:
     input:
-        S3.remote('RnaSeqData/120622_SN261_0440_AD10CBACXX/Project_McCue_Project_002/{sample}.fastq')
+    	fastqs.find_fastq
     output:
         S3.remote('HorseGeneAnnotation/private/sequence/RNASEQ/fastq/{sample}.fastq.gz')
     run:
         shell('gzip -c {input} > {output}')
+
+
 
 rule STAR_INDEX:
     input:
