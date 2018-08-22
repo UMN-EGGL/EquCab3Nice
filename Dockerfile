@@ -45,7 +45,8 @@ RUN /bin/bash -c "source activate default"
 #RUN python3 get-pip.py
 RUN pip install ipython
 RUN pip install locuspocus
-RUN pip install snakemake
+#RUN pip install snakemake
+RUN pip install git+https://bitbucket.org/LinkageIO/snakemake
 RUN pip install boto3
 RUN pip install ftputil
 
@@ -54,7 +55,8 @@ RUN conda install -c maxibor adapterremoval2
 
 COPY . /root/EquCab3Nice 
 
-RUN cd /root/EquCab3Nice
+WORKDIR /root/EquCab3Nice
+
 
 ENTRYPOINT ["snakemake", "-s", "/root/EquCab3Nice/Snakefile"]
 
